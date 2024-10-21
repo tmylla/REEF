@@ -52,13 +52,11 @@ def cal_cos(source_params, target_params, align_strategy='truncation'):
 
 source_params = load_params('llama-2-7b')
 tmodel_tags = [
-    'llama-2-7b-chat', 'vicuna-7b-v1.5', 'tulu-2-7b','vicuna-backdoored-7b', 'llama-2-coder-7b',
+    'llama-2-7b-chat', 'vicuna-7b-v1.5', 'tulu-2-7b', 'llama-2-coder-7b', 'llama-2-finance-7b',
     'chinese-llama-2-7b', 'Sheared-LLaMA-2.7B-ShareGPT', 'wizardmath-7b','llemma-7b','codellama-7b',
-    'llama-3-8b','mistral-7b',
-    'baichuan-2-7b','internlm2-7b', 'qwen-7b-v1.5',  
+    'llama-3-8b','mistral-7b', 'baichuan-2-7b','internlm2-7b', 'qwen-7b-v1.5',  
     'Sheared-LLaMA-2.7B-ShareGPT','Sheared-LLaMA-2.7B-Pruned','Sheared-LLaMA-2.7B',
     'Sheared-LLaMA-1.3B-ShareGPT','Sheared-LLaMA-1.3B-Pruned','Sheared-LLaMA-1.3B',
-    'vicuna-7b-v1.5', 'llama-2-finance-7b'
     # 'shisa-gamma-7b', 'wizardmath-7b-1.1', 'abel-7b-002'
     # 'openllama-2-7b', 'mpt-7b'
     'wandallama-2-7b', 'gblmllama-2-7b', 'sparsellama-2-7b',

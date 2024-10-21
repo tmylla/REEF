@@ -197,13 +197,14 @@ smodel_tag = 'llama-2-7b'
 s_vector = invariant_terms(smodel_tag, layers)
 
 tmodel_tags = [
-    'llama-2-7b-chat', 'vicuna-7b-v1.5', 'tulu-2-7b','vicuna-backdoored-7b', 'llama-2-coder-7b',
+    'llama-2-7b-chat', 'vicuna-7b-v1.5', 'tulu-2-7b', 'llama-2-coder-7b', 'llama-2-finance-7b',
     'chinese-llama-2-7b', 'Sheared-LLaMA-2.7B-ShareGPT', 'wizardmath-7b','llemma-7b','codellama-7b',
-    'llama-3-8b','mistral-7b',
-    'baichuan-2-7b','internlm2-7b', 'qwen-7b-v1.5',
-    'shisa-gamma-7b', 'wizardmath-7b-1.1', 'abel-7b-002'
-    'wandallama-2-7b', 'gblmllama-2-7b', 'sparsellama-2-7b', 'pruned-50'
-    'internlm2-20b-chat', 'mistral-8-7b-it-v0.1', 'qwen-72b-chat-v1.5'
+    'llama-3-8b','mistral-7b', 'baichuan-2-7b','internlm2-7b', 'qwen-7b-v1.5',  
+    'Sheared-LLaMA-2.7B-ShareGPT','Sheared-LLaMA-2.7B-Pruned','Sheared-LLaMA-2.7B',
+    'Sheared-LLaMA-1.3B-ShareGPT','Sheared-LLaMA-1.3B-Pruned','Sheared-LLaMA-1.3B',
+    # 'shisa-gamma-7b', 'wizardmath-7b-1.1', 'abel-7b-002'
+    # 'openllama-2-7b', 'mpt-7b'
+    'wandallama-2-7b', 'gblmllama-2-7b', 'sparsellama-2-7b',
 ]
 
 for tmodel_tag in tmodel_tags:

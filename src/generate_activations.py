@@ -17,7 +17,7 @@ class Hook:
     def __call__(self, module, module_inputs, module_outputs):
         self.out = module_outputs 
 
-def load_model(model_size, device, model_tag='llama-2-7b-chat-hf'):
+def load_model(model_size, device, model_tag='llama-2-7b'):
     model_path = get_model_save_path(model_tag)
     print(model_path)
 
@@ -126,14 +126,10 @@ if __name__ == "__main__":
     read statements from dataset, record activations in given layers, and save to specified files
     """
     parser = argparse.ArgumentParser(description="Generate activations for statements in a dataset")
-    parser.add_argument("--model", default="llama-2-7b-chat-hf",
-                        help="Size of the model to use. Options are 7B or 30B")
-    parser.add_argument("--layers", nargs='+', 
-                        help="Layers to save embeddings from")
-    parser.add_argument("--datasets", nargs='+',
-                        help="Names of datasets, without .csv extension")
-    parser.add_argument("--output_dir", default="activations",
-                        help="Directory to save activations to")
+    parser.add_argument("--model", default="llama-2-7b")
+    parser.add_argument("--layers", nargs='+',help="Layers to save embeddings from")
+    parser.add_argument("--datasets", nargs='+',help="Names of datasets, without .csv extension")
+    parser.add_argument("--output_dir", default="activations",help="Directory to save activations to")
     parser.add_argument("--load_in_8bit", action='store_true')
     parser.add_argument("--load_in_4bit", action='store_true')
     parser.add_argument("--downsample", type=int, default=42)

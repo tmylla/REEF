@@ -36,88 +36,72 @@ class GraphDataset(Dataset):
         return Data(x=self.features, edge_index=self.edge_index, y=self.labels)
 
 
-parser = argparse.ArgumentParser(description="Generate activations for statements in a dataset")
-parser.add_argument("--model", default="llama-2-7b",
-                    help="Size of the model to use. Options are 7B or 30B")
-parser.add_argument("--layers", nargs='+', type=int, default=[18],
-                    help="Layers to save embeddings from, -1 denotes all layers")
-parser.add_argument("--datasets", default = "truthfulqa", help="Names of datasets, without .csv extension")
-parser.add_argument("--output_dir", default="activations",
-                    help="Directory to save activations to")
-parser.add_argument("--device", default="cuda:0")
-parser.add_argument("--frommodel", default="llama-2-7b")
-parser.add_argument("--fromlayer", default=18, type=int)
-parser.add_argument("--load_probes", action='store_true')
+if __name__ == "__main__":
+    """
+    Applying the classifier trained on the activations of the base model (victim model) to the activations of the test model (suspect model)
+    """
+    parser = argparse.ArgumentParser(description="Generate activations for statements in a dataset")
+    parser.add_argument("--base_model", default="llama-2-7b")
+    parser.add_argument("--pretrain_dir", default="/your_path/",help="Directory to save the classifier train on activations of the victim model")
+    parser.add_argument("--test_model", default="vicuna-7b-v1.5")
+    parser.add_argument("--layers", nargs='+', type=int, default=[18], help="Layers to load activations; can also set 24/32/40/80 to load all layers' activations according to the model size")
+    parser.add_argument("--datasets", default = "truthfulqa", help="Names of datasets, without .csv extension")
+    parser.add_argument("--output_dir", default="activations", help="Directory to save activations to")
+    parser.add_argument("--device", default="cuda:0")
 
-parser.add_argument("--detector_type", default="linear", help="type of the model to detector")
-parser.add_argument('--embed_dim', default=4096, type=int)
-parser.add_argument('--path', default='results', type=str)
-parser.add_argument('--iterations', default=1500, type=int)
-parser.add_argument('--batch_size', default=256, type=int)
-parser.add_argument('--lr', default=0.01, type=float)
-parser.add_argument('--seed', default=2024, type=int)
-parser.add_argument('--depth', default=2, type=int)
-parser.add_argument('--width', default=256, type=int, help='width of fully connected layers')
-parser.add_argument('--hidden_dim', default=64, type=int, help='dimension of hidden_dim')
-parser.add_argument('--threshold', default=1, type=float)
-parser.add_argument("--eval_freq", default=20, type=int)
-parser.add_argument('--save_freq', default=200, type=int)
-parser.add_argument('--classes', default=2, type=int)
-parser.add_argument('--bias', default=True, type=bool)
-parser.add_argument('--attack', default=False, type=bool)
-parser.add_argument('--dropout', default=False, type=bool)
-parser.add_argument("--pretrain_dir", default="/your_path/",help="Directory to save activations to")
+    parser.add_argument("--detector_type", default="linear", help="type of the model to detector")
+    parser.add_argument('--embed_dim', default=4096, type=int)
+    parser.add_argument('--batch_size', default=256, type=int)
+    parser.add_argument('--depth', default=2, type=int)
+    parser.add_argument('--width', default=256, type=int, help='width of fully connected layers')
+    parser.add_argument('--hidden_dim', default=64, type=int, help='dimension of hidden_dim')
+    parser.add_argument('--threshold', default=1, type=float)
+    parser.add_argument('--classes', default=2, type=int)
+    parser.add_argument('--bias', default=True, type=bool)
+    parser.add_argument('--attack', default=False, type=bool)
 
-parser.add_argument("--load_in_8bit", action='store_true')
-parser.add_argument("--load_in_4bit", action='store_true')
+    parser.add_argument("--load_in_8bit", action='store_true')
+    parser.add_argument("--load_in_4bit", action='store_true')
 
-args = parser.parse_args()
-print(args)
-device = args.device
+    args = parser.parse_args()
+    print(args)
+    device = args.device
 
-print(f"{args.frommodel}-{args.detector_type} trained on {args.datasets}")
+    print(f"{args.base_model}-{args.detector_type} trained on {args.datasets}")
 
-dataset_name = f'{args.datasets}'
+    dataset_name = f'{args.datasets}'
 
-if args.detector_type == "MLP":
-    Net = MLP(in_dim=args.embed_dim, hidd_dim=args.width, out_dim=args.classes, n_layer=args.depth, bias = args.bias).to(args.device)
-elif args.detector_type == "linear":
-    Net = nn.Linear(args.embed_dim, 2, bias=True).to(args.device)
-elif args.detector_type == "ConvNet":
-    Net = ConvNet(num_class=2).to(args.device)
-elif args.detector_type == "ConvNet_13B":
-    Net = ConvNet_13B(num_class=2).to(args.device)
-elif args.detector_type == "GCN":
-    Net = GCN(args).to(args.device)
-elif args.detector_type == "Projection":
-    Net = Projection(in_dim=args.embed_dim, num_class=2).to(args.device)
-else:
-    raise Exception(f"Invalid type: {args.detector_type}.")
+    if args.detector_type == "MLP":
+        Net = MLP(in_dim=args.embed_dim, hidd_dim=args.width, out_dim=args.classes, n_layer=args.depth, bias = args.bias).to(args.device)
+    elif args.detector_type == "linear":
+        Net = nn.Linear(args.embed_dim, 2, bias=True).to(args.device)
+    elif args.detector_type == "ConvNet":
+        Net = ConvNet(num_class=2).to(args.device)
+    elif args.detector_type == "ConvNet_13B":
+        Net = ConvNet_13B(num_class=2).to(args.device)
+    elif args.detector_type == "GCN":
+        Net = GCN(args).to(args.device)
+    elif args.detector_type == "Projection":
+        Net = Projection(in_dim=args.embed_dim, num_class=2).to(args.device)
+    else:
+        raise Exception(f"Invalid type: {args.detector_type}.")
 
-print(Net)
-checkpoint = torch.load(args.pretrain_dir, map_location='cuda')
-Net.load_state_dict(checkpoint['model_state_dict'])
-Net.eval()
+    print(Net)
+    checkpoint = torch.load(args.pretrain_dir, map_location='cuda')
+    Net.load_state_dict(checkpoint['model_state_dict'])
+    Net.eval()
 
+    model_tag = args.test_model
 
-
-model_list=[
-    'llama-2-7b', 'llama-2-7b-chat', 'vicuna-7b-v1.5', 'chinese-llama-2-7b', 'xwinlm-7b', 
-    'mistral-7b','baichuan-2-7b', 'qwen-7b-v1.5', 'internlm-7b',
-    # 'llama-2-13b', 'llama-2-13b-chat', 'vicuna-13b', 'chinesellama-2-13b', 'xwinlm-13b', 
-    # 'plamo-13b', 'baichuan-2-13b', 'qwen-14b-v1.5', #'internlm-20b-chat', 
-    ]
-
-
-for model_tag in model_list:
     if args.load_in_8bit:
         model_tag = model_tag + '-8bit'
     if args.load_in_4bit:
         model_tag = model_tag + '-4bit'
 
-    layers = [int(layer) for layer in args.layers]
-    if layers == [-1]:
-        layers = list(range(utils.LLM_LAYERS_MAP.get(model_tag, 32)))
+    if args.layers[0] in [24,32,40,80]:
+        layers = list(range(args.layers[0]))
+    else:
+        layers = [int(layer) for layer in args.layers]
 
     for layer in layers: 
         all_layer_acts = []  

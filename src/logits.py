@@ -52,8 +52,8 @@ def main():
         'chinese-llama-2-7b','codellama-7b','llemma-7b',
         'Sheared-LLaMA-1.3B-Pruned','Sheared-LLaMA-1.3B', 'Sheared-LLaMA-1.3B-ShareGPT',
         'Sheared-LLaMA-2.7B-Pruned','Sheared-LLaMA-2.7B', 'Sheared-LLaMA-2.7B-ShareGPT',
-        'fusellm-7b', 'openllama-2-7b', #'mpt-7b',
-        'llama-3-8b', 'mistral-7b','qwen-7b-v1.5', 'baichuan-2-7b',# 'internlm2-7b',
+        'fusellm-7b', 'openllama-2-7b', 
+        'llama-3-8b', 'mistral-7b','qwen-7b-v1.5', 'baichuan-2-7b',
         'amberchat','gemma-7b','qwen-7b','falcon-7b','yi-6b','internlm-7b'
         'shisa-gamma-7b', 'wizardmath-7b-1.1', 'abel-7b-002'
         'llama-2-7b', 'openllama-2-7b', 'llama-3-8b', 'mpt-7b'
@@ -82,7 +82,7 @@ def main():
 
         outs.append(f"{min_difference:.4f}~{max_difference:.4f}")
 
-        e_values = ['xxx']
+        e_values = [150, 200, 250, 300]
         for e in e_values:
             ratio = compute_ratio(differences, e)
             print(f"Ratio for e={e}: {ratio:.4f}")

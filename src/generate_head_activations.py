@@ -99,11 +99,10 @@ def load_acts(dataset_name, model_tag, center=True, scale=False, device='cpu', a
 
 if __name__ == "__main__":
     """
-    read statements from dataset, record activations in given layers, and save to specified files
+    read statements from dataset, record activations from logits output, and save to specified files
     """
     parser = argparse.ArgumentParser(description="Generate activations for statements in a dataset")
-    parser.add_argument("--model", default="llama-2-7b",
-                        help="Name of model")
+    parser.add_argument("--model", default="llama-2-7b", help="Name of model")
     parser.add_argument("--datasets", nargs='+', default=['truthfulqa'], help="Names of datasets, without .csv extension")
     parser.add_argument("--output_dir", default="activations-lmhead", help="Directory to save activations to")
     parser.add_argument("--load_in_8bit", action='store_true')

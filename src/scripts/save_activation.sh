@@ -15,11 +15,11 @@ models=(
 )
 
 datasets=(
-    "truthfulqa01"
+    "truthfulqa"
     "toxigen"
     "stereoset"
     "pku-rlhf-10k"
-    confaide
+    "confaide"
 )
 
 device='cuda'

@@ -206,92 +206,80 @@ class Trainer(nn.Module):
         save_obj(self.plot_dict, osp.join(self.save_dir, "curve", "data.bin"))
 
 
+if __name__ == "__main__":
+    """
+    Train a classifier based on the activations of the base model (victim model)
+    """
+    parser = argparse.ArgumentParser(description="Train probing for activations")
+    parser.add_argument("--model", default="llama-2-7b")
+    parser.add_argument("--layers", nargs='+', type=int, default=[18, 20, 22], help="Layers to load activations; can also set 24/32/40/80 to load all layers' activations according to the model size")
+    parser.add_argument("--datasets", nargs='+', default=['truthfulqa'], choices=["truthfulqa", "toxigen", "stereoset","pku-rlhf-10k","confaide"], help="Names of datasets, without .csv extension, no downsample!")
+    parser.add_argument("--output_dir", default="activations",help="Directory to save activations to")
+    parser.add_argument("--device", default="cuda:0")
 
-parser = argparse.ArgumentParser(description="Train probing for activations")
-parser.add_argument("--model", default="llama-2-7b",
-                    help="Size of the model to use. Options are 7B or 30B")
-parser.add_argument("--layers", nargs='+', type=int, default=[18, 20, 22],
-                    help="Layers to save embeddings from, -1 denotes all layers")
-parser.add_argument("--datasets", nargs='+', default=['truthfulqa'], 
-                    help="Names of datasets, without .csv extension")
-parser.add_argument("--output_dir", default="activations",
-                    help="Directory to save activations to")
-parser.add_argument("--device", default="cuda:0")
-parser.add_argument("--frommodel", default="llama-2-7b-hf")
-parser.add_argument("--fromlayer", default=20)
-parser.add_argument("--load_probes", action='store_true')
+    parser.add_argument("--detector_type", default="MLP_Conv", choices=['linear','MLP','MLP_Conv', 'ConvNet', 'ConvNet_13B', "GNN", 'Projection', 'GCN'], help="type of the model to detector")
+    parser.add_argument('--embed_dim', default=4096, type=int)
+    parser.add_argument('--path', default='results', type=str)
+    parser.add_argument('--iterations', default=1500, type=int)
+    parser.add_argument('--batch_size', default=256, type=int)
+    parser.add_argument('--lr', default=0.01, type=float)
+    parser.add_argument('--seed', default=2024, type=int)
+    parser.add_argument('--depth', default=2, type=int)
+    parser.add_argument('--width', default=256, type=int, help='width of fully connected layers')
+    parser.add_argument("--eval_freq", default=20, type=int)
+    parser.add_argument('--save_freq', default=300, type=int)
+    parser.add_argument('--classes', default=2, type=int)
+    parser.add_argument('--bias', default=True, type=bool)
+    args = parser.parse_args()
 
-parser.add_argument("--detector_type", default="MLP_Conv", choices=['linear','MLP','MLP_Conv', 'ConvNet', 'ConvNet_13B', "GNN", 'Projection', 'GCN'],
-                    help="type of the model to detector")
-parser.add_argument('--embed_dim', default=4096, type=int)
-parser.add_argument('--path', default='results', type=str)
-parser.add_argument('--iterations', default=1500, type=int)
-parser.add_argument('--batch_size', default=256, type=int)
-parser.add_argument('--lr', default=0.01, type=float)
-parser.add_argument('--seed', default=2024, type=int)
-parser.add_argument('--depth', default=2, type=int)
-parser.add_argument('--width', default=256, type=int, help='width of fully connected layers')
-parser.add_argument("--eval_freq", default=20, type=int)
-parser.add_argument('--save_freq', default=300, type=int)
-parser.add_argument('--classes', default=2, type=int)
-parser.add_argument('--bias', default=True, type=bool)
-parser.add_argument('--kernel_size', default=3, type=int)
-parser.add_argument('--stride_size', default=1, type=int)
-parser.add_argument('--padding_size', default=1, type=int)
-args = parser.parse_args()
+    model_tag = args.model
+    device = args.device
 
-model_tag = args.model
-device = args.device
+    dataset_name = f'{args.datasets[0]}'
+    save_dir = f"results/{args.model}/{dataset_name}/"
+    os.makedirs(save_dir, exist_ok=True)
 
-dataset_name = f'{args.datasets[0]}'
-save_dir = f"results/{args.model}/{dataset_name}/"
-os.makedirs(save_dir, exist_ok=True)
+    all_layer_acts = []
+    if args.layers[0] in [24,32,40,80]:
+        layers = list(range(args.layers[0]))
+    else:
+        layers = [int(layer) for layer in args.layers]
 
-all_layer_acts = []
-layers = [int(layer) for layer in args.layers]
-if layers == [-1]:
-    layers = list(range(utils.LLM_LAYERS_MAP.get(model_tag, 32)))
+    for layer in layers:    
+        acts = load_acts(dataset_name, model_tag, layer=layer, center=True, scale=True, device=args.device, acts_dir=args.output_dir)
+        all_layer_acts.append(acts)
 
-for layer in layers:    
-    acts = load_acts(dataset_name, model_tag, layer=layer, center=True, scale=True, device=args.device, acts_dir=args.output_dir)
-    all_layer_acts.append(acts)
+    all_layer_acts = torch.stack(all_layer_acts).to(args.device) 
 
-all_layer_acts = torch.stack(all_layer_acts).to(args.device) 
+    num_layers = all_layer_acts.shape[0]
+    num_prompts = all_layer_acts.shape[1]
+    hidden_dim = all_layer_acts.shape[2]
+    EPOCH = 1000
+    train_ratio = 0.8
+    num_train = int(num_prompts * train_ratio)
+    num_test = num_prompts - num_train
 
-num_layers = all_layer_acts.shape[0]
-num_prompts = all_layer_acts.shape[1]
-hidden_dim = all_layer_acts.shape[2]
-EPOCH = 1000
-train_ratio = 0.8
-num_train = int(num_prompts * train_ratio)
-num_test = num_prompts - num_train
+    targets = pd.read_csv(f"datasets/{args.datasets[0]}.csv", dtype={'label': int})['label'].to_numpy()
+    targets = torch.tensor(targets).long().to(args.device)
+    targets = targets.unsqueeze(0).repeat(num_layers, 1) 
 
+    train_activations = all_layer_acts[:, :num_train, :]
+    test_activations = all_layer_acts[:, num_train:, :]
+    train_targets = targets[:, :num_train]
+    test_targets = targets[:, num_train:]
+    # print(train_activations.shape)
 
-targets = pd.read_csv(f"datasets/{args.datasets[0]}.csv", dtype={'label': int})['label'].to_numpy()
-targets = torch.tensor(targets).long().to(args.device)
-targets = targets.unsqueeze(0).repeat(num_layers, 1) 
+    for layer in range(len(layers)):
+        time_stamp = time_record()
+        train_set = Data.TensorDataset(train_activations[layer], train_targets[layer])
+        train_loader = Data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, drop_last=True)
+        test_set = Data.TensorDataset(test_activations[layer], test_targets[layer])
+        test_loader = Data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, drop_last=False)
 
+        args.current_layer = layers[layer]
 
-
-train_activations = all_layer_acts[:, :num_train, :]
-test_activations = all_layer_acts[:, num_train:, :]
-train_targets = targets[:, :num_train]
-test_targets = targets[:, num_train:]
-
-print(train_activations.shape)
-
-
-for layer in range(len(layers)):
-    time_stamp = time_record()
-    train_set = Data.TensorDataset(train_activations[layer], train_targets[layer])
-    train_loader = Data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True, drop_last=True)
-    test_set = Data.TensorDataset(test_activations[layer], test_targets[layer])
-    test_loader = Data.DataLoader(test_set, batch_size=args.batch_size, shuffle=False, drop_last=False)
-
-    args.current_layer = layers[layer]
-
-    trainer = Trainer(args)
-    trainer.run()
+        trainer = Trainer(args)
+        trainer.run()
 
 
 
