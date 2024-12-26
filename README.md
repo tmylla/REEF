@@ -43,7 +43,7 @@ pip install -r requirements.txt
 cd src/
 
 # generation activations
-sh ../scripts/save_activation.sh
+sh ./scripts/save_activation.sh
 # compute the cka-similarity
 python compute_cka.py --base_model llama-2-7b --base_layers -1 --base_model vicuna-7b-v1.5 --base_layers -1 
 # plot the cka-heatmap
@@ -73,7 +73,7 @@ python ics.py
 - *A Fingerprint for Large Language Models*
 ```bash
 # generation logits activations
-sh ../scripts/save_logits.sh
+sh ./scripts/save_logits.sh
 
 python logit.py
 ```
