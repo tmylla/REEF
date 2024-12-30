@@ -45,7 +45,7 @@ cd src/
 # generation activations
 sh ./scripts/save_activation.sh
 # compute the cka-similarity
-python compute_cka.py --base_model llama-2-7b --base_layers -1 --base_model vicuna-7b-v1.5 --base_layers -1 
+python compute_cka.py --base_model llama-2-7b --base_layers -1 --test_model vicuna-7b-v1.5 --test_layers -1 
 # plot the cka-heatmap
 plot.ipynb
 ```
